@@ -1,0 +1,129 @@
+<html>
+    <title>Comment Poster</title>
+    <head>
+        <style>
+            #comment-result {
+                margin-top:    10px;
+            }
+            #comment-success {
+                margin-bottom: 10px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Comments</h1>
+        <div><div>Name:</div><input id="name"></input></div>
+        <div><div>Comment:</div><input id="comment"></input></div>
+        <button id=submit        onclick="submit()">Submit Comment</button>
+        <button id=show-comments onclick="show_comments()">Show Comments</button>
+        <div id=comment-result></div>
+        <div id=comment-success></div>
+        <div>Current Comments:</div>
+        <ul id=comments></ul>
+        <h1>Creative Portion (Color Sliders)</h1>
+        <div>
+            <div>Red</div>
+            <input id=r-input type="range" oninput="change_color()"></input>
+        </div>
+        <div>
+            <div>Green</div>
+            <input id=g-input type="range" oninput="change_color()"></input>
+        </div>
+        <div>
+            <div>Blue</div>
+            <input id=b-input type="range" oninput="change_color()"></input>
+        </div>
+        <div id=color style="height: 100; width: 100; background: gray;"></div>
+    </body>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+    <script>
+        var port = 3000;
+
+        var getHost = function() {
+            var portI = location.host.indexOf(":");
+            if (portI != -1) {
+                return location.host.substring(0, portI);
+            } else {
+                return location.host;
+            }
+        }
+
+        // Find another REST service and put it on the page
+        var getCommentsURL = "http://" + getHost() + ":" + port + "/get-comments";
+        var postCommentURL = "http://" + getHost() + ":" + port + "/post-comments";
+        
+        var getJSON = function(url, onsuccess, onerror) {
+            $.ajax({  type:  'GET'
+                    , url:   url
+                    , async: true
+                    , contentType: "application/json"
+                    , dataType: 'jsonp'
+                    , success: onsuccess
+                    , error: function(e) {
+                        console.log("There was an error!");
+                        console.log(e);
+                        console.log(e.message);
+                        if (onerror != null) onerror(JSON.parse(e.responseText));
+                    }});
+        }
+
+        var show_comments;
+
+        var submit = function() {
+            var jsonToSubmit = {  Name:    $("#name"   ).val()
+                                , Comment: $("#comment").val()};
+            var jsonStr = JSON.stringify(jsonToSubmit);
+
+            console.log("jsonStr is", jsonStr);
+
+            $("#comment-result").text(jsonStr);
+            $("#comment-success").empty();
+
+            $.ajax({
+                type:     "POST",
+                url:      postCommentURL,
+                data:     jsonStr,
+                contentType: "application/json; charset=utf-8",
+                success:  function (resp) {
+                    console.log(resp);
+                    $("#comment-success").text("success");
+                    // show_comments();
+                },
+                dataType: "json"
+            });
+        }
+
+        show_comments = function() {
+            $.ajax({
+                type:     "GET",
+                url:      getCommentsURL,
+                contentType: "application/json; charset=utf-8",
+                success:  function (resp) {
+                    var comments = $("#comments").empty();
+                    for (comment of resp) {
+                        comments.append(  "<li>" + "Name: " + comment.Name + " — " + "Comment: " + comment.Comment
+                                        + "</li>");
+                    }
+                },
+                dataType: "json"
+            });
+        }
+
+        var change_color = function() {
+            var r = ($("#r-input").val() / 100) * 255;
+            var g = ($("#g-input").val() / 100) * 255;
+            var b = ($("#b-input").val() / 100) * 255;
+            
+            var rgbString = "rgb(" + Math.round(r) 
+                                   + ","
+                                   + Math.round(g)
+                                   + ","
+                                   + Math.round(b) + ")";
+
+            console.log("rgbstring", rgbString);
+
+            document.getElementById("color").style.background = rgbString;
+        }
+    </script>
+</html>
+
